@@ -1085,6 +1085,62 @@ The student-app namespace is gone.
 
 # Summary
 
+## Final running state (retained)
+
+The cleanup commands above were run only to demonstrate them. Afterwards everything was restored and left running: the Docker images, volumes and the compose stack, plus the Kubernetes deployment. The containers use the restart policy unless-stopped, so Docker starts them again automatically after Docker Desktop or the computer restarts.
+
+```powershell
+docker ps
+```
+
+Both containers are up.
+
+![f01_docker_ps](screenshots/f01_docker_ps.png)
+
+```powershell
+docker inspect -f '{{.Name}} restart={{.HostConfig.RestartPolicy.Name}}' student-api student-mongo
+```
+
+Set with: docker update --restart unless-stopped student-api student-mongo
+
+![f02_restart_policy](screenshots/f02_restart_policy.png)
+
+```powershell
+docker images student-api; docker images ghcr.io/abhinavsaxena2308/student-api
+```
+
+The local images and the image published by the CI/CD pipeline.
+
+![f03_images](screenshots/f03_images.png)
+
+```powershell
+docker volume ls --filter name=student
+```
+
+Volumes holding MongoDB data are kept.
+
+![f04_volumes](screenshots/f04_volumes.png)
+
+```powershell
+curl -s http://localhost:5000/health
+```
+
+The API is reachable and connected to MongoDB.
+
+![f05_health](screenshots/f05_health.png)
+
+```powershell
+kubectl get deploy,pods,svc,pvc -n student-app
+```
+
+The Kubernetes deployment of the same image is running alongside.
+
+![f06_k8s_all](screenshots/f06_k8s_all.png)
+
+![Docker Desktop: the student-management-api stack running](screenshots/dd_final_containers.png)
+
+*Docker Desktop: the student-management-api stack running*
+
 ## Command cheat sheet
 
 | Area | Command | What it does |

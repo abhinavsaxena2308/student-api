@@ -431,6 +431,21 @@ add(("cmd", "k22_get_ns", "kubectl get namespaces", "The student-app namespace i
 # ===========================================================================
 add(("part", "Summary"))
 # ===========================================================================
+add(("h1", "Final running state (retained)"))
+add(("p", "The cleanup commands above were run only to demonstrate them. Afterwards everything "
+          "was restored and left running: the Docker images, volumes and the compose stack, plus "
+          "the Kubernetes deployment. The containers use the restart policy unless-stopped, so "
+          "Docker starts them again automatically after Docker Desktop or the computer restarts."))
+add(("cmd", "f01_docker_ps", "docker ps", "Both containers are up."))
+add(("cmd", "f02_restart_policy", "docker inspect -f '{{.Name}} restart={{.HostConfig.RestartPolicy.Name}}' student-api student-mongo",
+     "Set with: docker update --restart unless-stopped student-api student-mongo"))
+add(("cmd", "f03_images", "docker images student-api; docker images ghcr.io/abhinavsaxena2308/student-api",
+     "The local images and the image published by the CI/CD pipeline."))
+add(("cmd", "f04_volumes", "docker volume ls --filter name=student", "Volumes holding MongoDB data are kept."))
+add(("cmd", "f05_health", "curl -s http://localhost:5000/health", "The API is reachable and connected to MongoDB."))
+add(("cmd", "f06_k8s_all", "kubectl get deploy,pods,svc,pvc -n student-app",
+     "The Kubernetes deployment of the same image is running alongside."))
+add(("img", "dd_final_containers.png", "Docker Desktop: the student-management-api stack running"))
 add(("h1", "Command cheat sheet"))
 add(("table", ["Area", "Command", "What it does"], [
     ["Git", "git add / commit / push", "Stage, commit and upload changes"],
