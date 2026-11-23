@@ -1,0 +1,27 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: student-mongo
+    volumes:
+      - student-data:/data/db
+    networks:
+      - student-net
+
+  api:
+    build: .
+    image: student-api:1.0
+    container_name: student-api
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/studentdb
+    depends_on:
+      - mongo
+    networks:
+      - student-net
+
+volumes:
+  student-data:
+
+networks:
+  student-net:
