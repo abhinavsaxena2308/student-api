@@ -1,4 +1,4 @@
-const Student = require("../models/Student");
+﻿const Student = require("../models/Student");
 
 exports.getAll = async (req, res) => res.json(await Student.find());
 
@@ -10,7 +10,7 @@ exports.getOne = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    res.status(201).json(await Student.create(req.body));
+    res.status(200).json(await Student.create(req.body));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
