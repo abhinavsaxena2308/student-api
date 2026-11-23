@@ -2,7 +2,20 @@
   "name": "student-management-api",
   "version": "1.0.0",
   "description": "REST API for managing students (Express + MongoDB)",
-  "main": "src/app.js",
-  "scripts": { "start": "node src/app.js" },
-  "dependencies": { "express": "^4.21.2", "mongoose": "^8.9.5" }
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest --runInBand --forceExit"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
 }
