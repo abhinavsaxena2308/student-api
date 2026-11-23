@@ -1,48 +1,53 @@
-# Docker Basics: Hands-on Documentation
+# DevOps Practical Documentation
 
-*Containerising a Student Management Backend (Node.js + Express + MongoDB)*
+*Student Management API: Git & GitHub, CI/CD with GitHub Actions, Docker and Kubernetes*
 
-## Introduction
+Project repository: https://github.com/abhinavsaxena2308/student-api
 
-Docker is a platform that packages an application together with everything it needs (runtime, libraries, configuration) into a portable unit called a container. A container runs the same way on any machine that has Docker installed, which removes the classic "it works on my machine" problem.
+---
 
-#### Core concepts
+# DevOps and CI/CD
+
+## What is DevOps
+
+DevOps is a set of practices that brings software development (Dev) and IT operations (Ops) together. Instead of developers handing code over to a separate team to deploy, the whole path from writing code to running it in production is automated, repeatable and owned by one team. The goals are faster releases, fewer failures and quicker recovery.
+
+#### The DevOps lifecycle
+
+| Stage | What happens | Tool used in this project |
+|---|---|---|
+| Plan | Decide features and fixes | GitHub repository |
+| Code | Write code and track every change | Git, GitHub |
+| Build | Turn source code into a runnable artifact | Docker (image build) |
+| Test | Run automated tests on every change | Jest + Supertest in GitHub Actions |
+| Release | Publish a versioned artifact | GitHub Container Registry (GHCR) |
+| Deploy | Run the artifact on servers | Kubernetes |
+| Operate | Keep it running, scale, self-heal | Kubernetes Deployments |
+| Monitor | Watch logs, health and resources | kubectl logs, docker stats, /health |
+
+## What is CI/CD
 
 | Term | Meaning |
 |---|---|
-| Image | A read-only template (blueprint) built from a Dockerfile. Example: student-api:1.0 |
-| Container | A running instance of an image. Many containers can run from one image. |
-| Dockerfile | A text file with step-by-step instructions to build an image. |
-| Registry | A store for images. Docker Hub is the default public registry. |
-| Volume | Persistent storage managed by Docker; data survives container removal. |
-| Network | A virtual network that lets containers talk to each other by name. |
-| Docker Compose | A tool to define and run multi-container apps from one YAML file. |
+| Continuous Integration (CI) | Every push is automatically built and tested, so broken code is caught within minutes instead of at release time. |
+| Continuous Delivery | Every change that passes CI produces a release-ready artifact (here: a Docker image). |
+| Continuous Deployment | The release is deployed automatically without manual steps. |
+| Pipeline | The ordered set of automated stages a change goes through (test → build → publish). |
 
-## Prerequisites and Setup
+## Tools used
 
-- Windows 11 with Docker Desktop installed (WSL 2 backend)
-- PowerShell terminal
-- Docker Engine 29.9.3, Docker Compose v5.7.1, Docker Desktop 4.100.1
+| Category | Tool | Role in this project |
+|---|---|---|
+| Version control | Git | Track changes, branches, merges |
+| Code hosting | GitHub | Remote repository, pull requests, Actions, packages |
+| CI/CD | GitHub Actions | Test, build and publish on every push |
+| Containerization | Docker, Docker Compose | Package the API and MongoDB as containers |
+| Registry | GHCR (ghcr.io) | Stores the published images |
+| Orchestration | Kubernetes (Docker Desktop) | Deploy, scale and self-heal the containers |
 
-```powershell
-docker --version
-```
+## The project: Student Management API
 
-Confirms the Docker CLI is installed and prints its version.
-
-![docker --version](screenshots/01_version.png)
-
-```powershell
-docker info
-```
-
-Shows system-wide information about the Docker engine: number of containers and images, storage driver, kernel, CPUs and memory available to Docker. (Server section shown.)
-
-![docker info](screenshots/02_info.png)
-
-## Project Overview: Student Management API
-
-A small REST API that performs CRUD operations on student records. It is written in Node.js with Express, and stores data in MongoDB through Mongoose.
+A REST API built with Node.js, Express and MongoDB (Mongoose) that performs CRUD operations on student records.
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -57,25 +62,31 @@ A small REST API that performs CRUD operations on student records. It is written
 
 ```text
 student-management-api/
+├── .github/workflows/ci-cd.yml   GitHub Actions pipeline
 ├── src/
-│   ├── app.js
+│   ├── app.js                    Express app (routes, middleware)
+│   ├── server.js                 Connects to MongoDB and starts the server
 │   ├── controllers/studentController.js
 │   ├── models/Student.js
 │   └── routes/studentRoutes.js
-├── package.json
+├── tests/api.test.js             Jest + Supertest API tests
+├── k8s/                          Kubernetes manifests
+│   ├── namespace.yaml
+│   ├── mongo.yaml
+│   └── api.yaml
 ├── Dockerfile
 ├── .dockerignore
 ├── docker-compose.yml
-└── docs/  (this documentation + screenshots)
+└── package.json
 ```
 
 ```powershell
 tree /F /A src
 ```
 
-Source code layout as seen in the terminal.
+Source code layout in the terminal.
 
-![tree /F /A src](screenshots/a1_tree.png)
+![a1_tree](screenshots/a1_tree.png)
 
 #### Student model (src/models/Student.js)
 
@@ -96,7 +107,352 @@ const studentSchema = new mongoose.Schema(
 module.exports = mongoose.model("Student", studentSchema);
 ```
 
-## Writing the Dockerfile
+## End-to-end flow
+
+```text
+Developer ──git push──► GitHub ──triggers──► GitHub Actions pipeline
+                                                │
+                     ┌──────────────────────────┼───────────────────────────┐
+                     ▼                          ▼                           ▼
+              1. Test job                2. Docker job               3. Publish job (main only)
+           Jest + MongoDB         docker compose up + curl       build & push image to GHCR
+                                                                            │
+                                                                            ▼
+                                             Kubernetes pulls ghcr.io/.../student-api:latest
+                                             and runs it as a scalable, self-healing Deployment
+```
+
+---
+
+# Version Control using Git and GitHub
+
+## Git and GitHub concepts
+
+Git is a distributed version control system: it records every change to the code as a commit, so you can see history, compare versions, work on branches and undo mistakes. GitHub hosts Git repositories online and adds collaboration features such as pull requests, Actions (CI/CD) and Packages (container registry).
+
+| Term | Meaning |
+|---|---|
+| Repository | The project folder plus its full history (.git). |
+| Working directory / staging area | Files you edit / changes selected for the next commit (git add). |
+| Commit | A saved snapshot with a message, author and unique hash. |
+| Branch | An independent line of work; main is the default branch. |
+| Merge | Combines the commits of one branch into another. |
+| Remote (origin) | The copy of the repository on GitHub. |
+| Push / Pull | Upload local commits to / download new commits from the remote. |
+
+## Basic Git workflow
+
+```powershell
+git --version
+```
+
+Confirms Git is installed.
+
+![g01_git_version](screenshots/g01_git_version.png)
+
+```powershell
+git config user.name
+```
+
+Shows the author name recorded in commits (set once with git config --global user.name).
+
+![g02_git_config](screenshots/g02_git_config.png)
+
+```powershell
+git remote -v
+```
+
+The local repository is linked to the GitHub repository as origin.
+
+![c08_git_remote](screenshots/c08_git_remote.png)
+
+### git status: see what changed
+
+```powershell
+git status
+```
+
+The new k8s/ folder is untracked, meaning Git sees it but it is not part of any commit yet.
+
+![g03_git_status](screenshots/g03_git_status.png)
+
+### git add: stage changes
+
+```powershell
+git add k8s/
+```
+
+Moves the new files into the staging area. It prints nothing on success.
+
+![g04_git_add](screenshots/g04_git_add.png)
+
+```powershell
+git status --short
+```
+
+A = added to the staging area, ?? = still untracked.
+
+![g05_git_status_staged](screenshots/g05_git_status_staged.png)
+
+### git commit: save a snapshot
+
+```powershell
+git commit -m "..."
+```
+
+Creates a commit containing the staged files. a6e4d30 is its short hash.
+
+![g06_git_commit](screenshots/g06_git_commit.png)
+
+### git push: upload to GitHub
+
+```powershell
+git push origin main
+```
+
+Sends the new commit to GitHub. This push also triggers the CI/CD pipeline.
+
+![g07_git_push](screenshots/g07_git_push.png)
+
+### git log and git branch: history
+
+```powershell
+git log --oneline --graph -8
+```
+
+Shows commit history as a graph, including the feature branch that was merged into main.
+
+![g08_git_log_graph](screenshots/g08_git_log_graph.png)
+
+```powershell
+git branch -a
+```
+
+Lists local branches and remote-tracking branches (remotes/origin/...).
+
+![g09_git_branch](screenshots/g09_git_branch.png)
+
+## Branching and merging workflow
+
+New work is done on a feature branch, so main always stays working. In this project a feature branch was used to show how CI protects main:
+
+- git switch -c feature/status-code-change: create and switch to a new branch
+- Commit a change (the create endpoint now returns 200 instead of 201) and push the branch
+- GitHub Actions runs the tests on the branch; they fail, so the problem is caught before main
+- Commit a fix on the same branch and push; the pipeline passes
+- git switch main and git merge --no-ff feature/status-code-change, then git push
+
+```powershell
+git show --stat 0bf911f
+```
+
+The commit that introduced the bug.
+
+![g10_git_show_bug](screenshots/g10_git_show_bug.png)
+
+```powershell
+git diff 0bf911f 2ec99ee -- src/controllers/studentController.js
+```
+
+The difference between the buggy commit and the fix: status 200 goes back to 201.
+
+![g11_git_diff_fix](screenshots/g11_git_diff_fix.png)
+
+## The repository on GitHub
+
+![GitHub repository page with the project files](screenshots/gh_repo.png)
+
+*GitHub repository page with the project files*
+
+![Commit history on GitHub](screenshots/gh_commits.png)
+
+*Commit history on GitHub*
+
+#### Git command reference
+
+| Command | What it does |
+|---|---|
+| git init | Create a new repository |
+| git clone <url> | Copy a remote repository |
+| git status | Show changed, staged and untracked files |
+| git add <files> / git add . | Stage changes |
+| git commit -m "msg" | Commit staged changes |
+| git push / git pull | Upload / download commits |
+| git log --oneline --graph | Show history |
+| git switch -c <branch> | Create and switch to a branch |
+| git merge <branch> | Merge a branch into the current one |
+| git diff | Show line-by-line changes |
+| git remote -v | Show linked remotes |
+
+---
+
+# CI/CD using GitHub Actions
+
+## GitHub Actions concepts
+
+| Term | Meaning |
+|---|---|
+| Workflow | A YAML file in .github/workflows/ that defines the automation. |
+| Event (on) | What starts the workflow: push, pull_request, manual run (workflow_dispatch). |
+| Job | A group of steps that runs on one machine. Jobs can depend on each other (needs). |
+| Step | A single command (run) or a reusable action (uses). |
+| Runner | The virtual machine GitHub provides to run a job (ubuntu-latest). |
+| Action | A reusable step, e.g. actions/checkout or docker/build-push-action. |
+| Service container | An extra container for a job, e.g. MongoDB for the tests. |
+| GITHUB_TOKEN | A temporary token GitHub creates for each run; used here to push to GHCR. |
+
+## Automated tests
+
+The pipeline is only useful if it can tell good code from bad code, so the project has API tests written with Jest and Supertest. They call every endpoint against a real MongoDB database.
+
+```powershell
+cat tests/api.test.js | Select-Object -First 30
+```
+
+The first part of the test file.
+
+![c03_cat_test_head](screenshots/c03_cat_test_head.png)
+
+Running the tests locally against a temporary MongoDB container:
+
+```powershell
+docker run -d --rm --name test-mongo -p 27017:27017 mongo:7
+```
+
+Starts a throwaway MongoDB for the tests (--rm deletes it when stopped).
+
+![c04_mongo_for_tests](screenshots/c04_mongo_for_tests.png)
+
+```powershell
+npm test
+```
+
+All 6 tests pass.
+
+![c05_npm_test](screenshots/c05_npm_test.png)
+
+```powershell
+docker stop test-mongo
+```
+
+Stops (and removes) the test database.
+
+![c06_stop_mongo](screenshots/c06_stop_mongo.png)
+
+## The CI/CD workflow file
+
+```powershell
+tree /F /A .github
+```
+
+Workflows live in .github/workflows/.
+
+![c01_tree_github](screenshots/c01_tree_github.png)
+
+```powershell
+cat .github/workflows/ci-cd.yml
+```
+
+The complete pipeline definition.
+
+![c02_cat_workflow](screenshots/c02_cat_workflow.png)
+
+| Section | Purpose |
+|---|---|
+| on: push (all branches), pull_request, workflow_dispatch | Run on every push to any branch, on pull requests to main, and manually. |
+| env: REGISTRY, IMAGE_NAME | Image is published as ghcr.io/<owner>/<repo>. |
+| job test | Starts a MongoDB service container, installs dependencies with npm ci and runs npm test. |
+| job docker-build (needs: test) | Runs only if tests pass. Builds the image and starts the whole stack with docker compose, waits for /health, then calls the API with curl. |
+| if: always() steps | Container logs are printed and the stack is stopped even if a step failed. |
+| job publish (needs: docker-build) | Runs only for pushes to main. Logs in to GHCR with GITHUB_TOKEN, generates tags and builds and pushes the image. |
+| permissions: packages: write | Allows this job (and only this job) to publish packages. |
+| tags: latest and sha-<commit> | latest always points to the newest main build; the sha tag identifies exactly which commit an image came from. |
+
+![The workflow file on GitHub](screenshots/gh_workflow_file.png)
+
+*The workflow file on GitHub*
+
+## The pipeline in action
+
+Every git push starts the pipeline automatically. The Actions tab lists all runs, with the branch and the result of each:
+
+![Actions tab: runs on main and on the feature branch (one failed, the rest passed)](screenshots/gh_actions_list.png)
+
+*Actions tab: runs on main and on the feature branch (one failed, the rest passed)*
+
+### A successful run on main
+
+![Run summary: Test → Docker build & smoke test → Publish image to GHCR, all passed](screenshots/gh_run_success.png)
+
+*Run summary: Test → Docker build & smoke test → Publish image to GHCR, all passed*
+
+![Test job log: the 6 Jest tests passing on the GitHub runner](screenshots/gh_job_test_log.png)
+
+*Test job log: the 6 Jest tests passing on the GitHub runner*
+
+### Continuous Delivery: the published image
+
+The publish job pushed the image to GitHub Container Registry. The package is public, so anyone, including Kubernetes, can pull it:
+
+![GHCR package page with the latest and sha-<commit> tags](screenshots/gh_package.png)
+
+*GHCR package page with the latest and sha-<commit> tags*
+
+```powershell
+docker pull ghcr.io/abhinavsaxena2308/student-api:latest
+```
+
+### When the pipeline catches a bug
+
+On the feature branch the create endpoint was changed to return 200 instead of 201. The push triggered the pipeline and the test job failed. Because the later jobs depend on it (needs: test), the Docker build and publish jobs were skipped, so no broken image was published.
+
+![Failed run: Test failed, Docker build and Publish were skipped](screenshots/gh_run_failed.png)
+
+*Failed run: Test failed, Docker build and Publish were skipped*
+
+![Failed test log: expected status 201 but received 200](screenshots/gh_job_failed_log.png)
+
+*Failed test log: expected status 201 but received 200*
+
+After the fix was pushed the branch went green, and once it was merged the pipeline on main ran all three jobs and published a new image (see the Actions list above).
+
+---
+
+# Containerization and Orchestration
+
+## Docker
+
+Docker packages an application together with everything it needs (runtime, libraries, configuration) into an image. A running image is a container. Containers run the same way on a laptop, on a GitHub Actions runner and in a Kubernetes cluster.
+
+| Term | Meaning |
+|---|---|
+| Image | A read-only template built from a Dockerfile. Example: student-api:1.0 |
+| Container | A running instance of an image. Many containers can run from one image. |
+| Dockerfile | Step-by-step instructions to build an image. |
+| Registry | A store for images: Docker Hub, GHCR. |
+| Volume | Persistent storage; data survives container removal. |
+| Network | A virtual network that lets containers reach each other by name. |
+| Docker Compose | Defines and runs multi-container apps from one YAML file. |
+
+### Setup
+
+```powershell
+docker --version
+```
+
+Confirms the Docker CLI is installed.
+
+![01_version](screenshots/01_version.png)
+
+```powershell
+docker info
+```
+
+Engine details: containers, images, storage driver, kernel, CPUs and memory. (Server section shown.)
+
+![02_info](screenshots/02_info.png)
+
+### The Dockerfile
 
 ```powershell
 cat Dockerfile
@@ -104,132 +460,113 @@ cat Dockerfile
 
 The Dockerfile used to build the API image.
 
-![cat Dockerfile](screenshots/a2_cat_dockerfile.png)
+![a2_cat_dockerfile](screenshots/a2_cat_dockerfile.png)
 
 | Instruction | Purpose |
 |---|---|
 | FROM node:22-alpine | Base image: Node.js 22 on lightweight Alpine Linux. |
-| WORKDIR /app | Sets /app as the working directory inside the image. |
-| COPY package*.json ./ | Copies dependency manifests first so the npm install layer is cached. |
-| RUN npm install --omit=dev | Installs production dependencies. |
-| COPY src ./src | Copies the application source code. |
-| ENV PORT=5000 | Default environment variable read by the app. |
-| EXPOSE 5000 | Documents the port the app listens on. |
+| WORKDIR /app | Working directory inside the image. |
+| COPY package*.json ./ | Copy dependency manifests first so the install layer is cached. |
+| RUN npm ci --omit=dev | Clean install of production dependencies from package-lock.json. |
+| COPY src ./src | Copy the application source code. |
+| ENV PORT=5000 / EXPOSE 5000 | Default port and documentation of the listening port. |
 | CMD ["npm", "start"] | Command executed when a container starts. |
-
-The .dockerignore file keeps unnecessary files out of the build context, which makes builds faster and images smaller:
 
 ```powershell
 cat .dockerignore
 ```
 
-Files excluded from the build context.
+Files kept out of the build context (faster builds, smaller images).
 
-![cat .dockerignore](screenshots/a3_cat_dockerignore.png)
+![a3_cat_dockerignore](screenshots/a3_cat_dockerignore.png)
 
-## Image Commands
-
-### docker pull: download an image
+### Image commands
 
 ```powershell
 docker pull node:22-alpine
 ```
 
-Downloads the base image from Docker Hub. Each image is made of layers, which are downloaded separately and reused across images.
+Downloads the base image from Docker Hub.
 
-![docker pull node:22-alpine](screenshots/03_pull.png)
-
-### docker build: build an image from a Dockerfile
+![03_pull](screenshots/03_pull.png)
 
 ```powershell
 docker build -t student-api:1.0 .
 ```
 
--t gives the image a name:tag, and . is the build context (current folder). Each Dockerfile instruction becomes a build step [n/5].
+-t names the image; . is the build context. Each Dockerfile instruction is a build step.
 
-![docker build -t student-api:1.0 .](screenshots/04_build.png)
-
-### docker images: list local images
+![04_build](screenshots/04_build.png)
 
 ```powershell
 docker images
 ```
 
-Lists every image stored locally with its tag, ID and size.
+Lists local images with tag, ID and size.
 
-![docker images](screenshots/05_images.png)
-
-### docker tag: add another name to an image
+![05_images](screenshots/05_images.png)
 
 ```powershell
 docker tag student-api:1.0 student-api:latest
 ```
 
-Creates a second tag pointing to the same image. It prints nothing on success.
+Adds a second tag to the same image.
 
-![docker tag student-api:1.0 student-api:latest](screenshots/06_tag.png)
+![06_tag](screenshots/06_tag.png)
 
 ```powershell
 docker images student-api
 ```
 
-Filters the list by repository name. Both tags share the same IMAGE ID.
+Filters the list by repository name.
 
-![docker images student-api](screenshots/07_images_filtered.png)
-
-### docker history: view image layers
+![07_images_filtered](screenshots/07_images_filtered.png)
 
 ```powershell
 docker history student-api:1.0
 ```
 
-Shows the layer created by each Dockerfile instruction and its size. The top seven rows come from our Dockerfile; the rest come from the node:22-alpine base image.
+The layer created by each instruction. The top 7 rows come from our Dockerfile, the rest from the base image.
 
-![docker history student-api:1.0](screenshots/08_history.png)
-
-### docker inspect: low-level image details
+![08_history](screenshots/08_history.png)
 
 ```powershell
 docker inspect student-api:1.0 --format "..."
 ```
 
-Returns the image metadata as JSON. --format with a Go template picks out specific fields.
+Low-level image metadata.
 
-![docker inspect student-api:1.0 --format "..."](screenshots/09_inspect.png)
+![09_inspect](screenshots/09_inspect.png)
 
-![Docker Desktop: Images view showing student-api, mongo and node images](screenshots/dd_images.png)
+![Docker Desktop: Images view](screenshots/dd_images.png)
 
-*Docker Desktop: Images view showing student-api, mongo and node images*
+*Docker Desktop: Images view*
 
-## Networks and Volumes
-
-### Create a network
+### Networks and volumes
 
 ```powershell
 docker network create student-net
 ```
 
-Creates a user-defined bridge network. Containers on it can reach each other by container name.
+A user-defined network; containers on it resolve each other by name.
 
-![docker network create student-net](screenshots/10_network_create.png)
+![10_network_create](screenshots/10_network_create.png)
 
 ```powershell
 docker network ls
 ```
 
-Lists networks (bridge, host and none are built in).
+Lists networks.
 
-![docker network ls](screenshots/11_network_ls.png)
-
-### Create a volume
+![11_network_ls](screenshots/11_network_ls.png)
 
 ```powershell
 docker volume create student-data
 ```
 
-Creates a named volume used to persist MongoDB data.
+A named volume for MongoDB data.
 
-![docker volume create student-data](screenshots/12_volume_create.png)
+![12_volume_create](screenshots/12_volume_create.png)
 
 ```powershell
 docker volume ls
@@ -237,354 +574,538 @@ docker volume ls
 
 Lists volumes.
 
-![docker volume ls](screenshots/13_volume_ls.png)
+![13_volume_ls](screenshots/13_volume_ls.png)
 
-## Container Commands
-
-### docker run: start the MongoDB container
+### Container commands
 
 ```powershell
 docker run -d --name student-mongo --network student-net -v student-data:/data/db mongo:7
 ```
 
--d runs in the background (detached), --name sets the container name, --network attaches it to student-net and -v mounts the volume. The image is pulled automatically because it is not present locally. The long string printed last is the container ID.
+-d detached, --name container name, --network attach to network, -v mount volume. The image is pulled automatically.
 
-![docker run -d --name student-mongo --network student-net -v student-data:/data/db mongo:7](screenshots/14_run_mongo.png)
-
-### docker run: start the API container
+![14_run_mongo](screenshots/14_run_mongo.png)
 
 ```powershell
 docker run -d --name student-api --network student-net -p 5000:5000 -e MONGO_URI=mongodb://student-mongo:27017/studentdb student-api:1.0
 ```
 
--p 5000:5000 maps host port to container port and -e sets an environment variable. The API reaches MongoDB using the hostname student-mongo, which is the container name on the shared network.
+-p maps host port to container port, -e sets an environment variable.
 
-![docker run -d --name student-api --network student-net -p 5000:5000 -e MONGO_URI=mongodb://student-mongo:27017/studentdb student-api:1.0](screenshots/15_run_api.png)
-
-### docker ps: list running containers
+![15_run_api](screenshots/15_run_api.png)
 
 ```powershell
 docker ps
 ```
 
-Shows running containers, their status and port mappings.
+Running containers with status and ports.
 
-![docker ps](screenshots/16_ps.png)
-
-### docker logs: view container output
+![16_ps](screenshots/16_ps.png)
 
 ```powershell
 docker logs student-api
 ```
 
-Prints what the container wrote to stdout/stderr. Add -f to follow live.
+Container output (add -f to follow).
 
-![docker logs student-api](screenshots/17_logs.png)
-
-### Testing the API running in the container
+![17_logs](screenshots/17_logs.png)
 
 ```powershell
 curl -s -X POST http://localhost:5000/api/students ...
 ```
 
-Creates a student through the containerised API.
+Create a student through the containerised API.
 
-![curl -s -X POST http://localhost:5000/api/students ...](screenshots/18_curl_post.png)
-
-```powershell
-curl -s -X POST http://localhost:5000/api/students ...
-```
-
-Creates a second student.
-
-![curl -s -X POST http://localhost:5000/api/students ...](screenshots/19_curl_post2.png)
+![18_curl_post](screenshots/18_curl_post.png)
 
 ```powershell
 curl -s http://localhost:5000/api/students
 ```
 
-Fetches all students. The data is stored in the MongoDB container.
+Read all students back.
 
-![curl -s http://localhost:5000/api/students](screenshots/20_curl_get.png)
-
-### docker exec: run a command inside a container
+![20_curl_get](screenshots/20_curl_get.png)
 
 ```powershell
 docker exec student-api sh -c "..."
 ```
 
-Runs commands inside the running API container: Node version, app files and OS (Alpine). Use docker exec -it student-api sh for an interactive shell.
+Run commands inside a running container.
 
-![docker exec student-api sh -c "..."](screenshots/21_exec.png)
+![21_exec](screenshots/21_exec.png)
 
 ```powershell
 docker exec student-mongo mongosh studentdb --eval "..."
 ```
 
-Queries MongoDB directly inside its container to confirm the records were saved.
+Query MongoDB inside its container.
 
-![docker exec student-mongo mongosh studentdb --eval "..."](screenshots/22_exec_mongo.png)
-
-### docker top and docker stats: monitor containers
+![22_exec_mongo](screenshots/22_exec_mongo.png)
 
 ```powershell
 docker top student-api
 ```
 
-Lists the processes running inside the container.
+Processes inside the container.
 
-![docker top student-api](screenshots/23_top.png)
+![23_top](screenshots/23_top.png)
 
 ```powershell
 docker stats --no-stream
 ```
 
-Shows live CPU, memory, network and disk usage. --no-stream prints one snapshot.
+CPU, memory, network and disk usage.
 
-![docker stats --no-stream](screenshots/24_stats.png)
-
-### docker stop, start, restart
+![24_stats](screenshots/24_stats.png)
 
 ```powershell
 docker stop student-api
 ```
 
-Gracefully stops a running container.
+Gracefully stop a container.
 
-![docker stop student-api](screenshots/25_stop.png)
+![25_stop](screenshots/25_stop.png)
 
 ```powershell
 docker ps -a
 ```
 
--a lists all containers including stopped ones; student-api now shows Exited.
+All containers including stopped ones.
 
-![docker ps -a](screenshots/26_ps_a.png)
+![26_ps_a](screenshots/26_ps_a.png)
 
 ```powershell
 docker start student-api
 ```
 
-Starts the stopped container again.
+Start it again.
 
-![docker start student-api](screenshots/27_start.png)
+![27_start](screenshots/27_start.png)
 
 ```powershell
 docker restart student-api
 ```
 
-Stops and starts the container in one step.
+Stop and start in one step.
 
-![docker restart student-api](screenshots/28_restart.png)
-
-### Inspecting the network and volume
+![28_restart](screenshots/28_restart.png)
 
 ```powershell
 docker network inspect student-net --format "..."
 ```
 
-Shows which containers are attached to the network and their internal IP addresses.
+Containers attached to the network and their IPs.
 
-![docker network inspect student-net --format "..."](screenshots/29_network_inspect.png)
+![29_network_inspect](screenshots/29_network_inspect.png)
 
 ```powershell
 docker volume inspect student-data
 ```
 
-Shows volume details, including where Docker stores the data (Mountpoint).
+Volume details and mount point.
 
-![docker volume inspect student-data](screenshots/30_volume_inspect.png)
-
-### docker rm and docker network rm
+![30_volume_inspect](screenshots/30_volume_inspect.png)
 
 ```powershell
 docker rm -f student-api student-mongo
 ```
 
-Removes containers; -f stops them first if they are running. The data stays in the volume.
+Remove containers (data stays in the volume).
 
-![docker rm -f student-api student-mongo](screenshots/31_rm.png)
+![31_rm](screenshots/31_rm.png)
 
 ```powershell
 docker network rm student-net
 ```
 
-Removes the network.
+Remove the network.
 
-![docker network rm student-net](screenshots/32_network_rm.png)
+![32_network_rm](screenshots/32_network_rm.png)
 
-## Docker Compose
+### Docker Compose
 
-Running each container by hand needs many flags. Docker Compose describes the whole stack (API, database, network and volume) in one YAML file and starts it with a single command.
-
-### The project's docker-compose.yml
+Compose describes the API, database, network and volume in one YAML file and starts everything with one command. The same file is used by the GitHub Actions smoke test.
 
 ```powershell
 cat docker-compose.yml
 ```
 
-The compose file of the project.
+The project's compose file.
 
-![cat docker-compose.yml](screenshots/a4_cat_compose.png)
+![a4_cat_compose](screenshots/a4_cat_compose.png)
 
 | Key | Purpose |
 |---|---|
-| services | Defines the containers: mongo (database) and api (our backend). |
-| image / build | mongo uses a ready image; api is built from the local Dockerfile (build: .). |
-| container_name | Fixed container names (student-mongo, student-api). |
+| services | The containers: mongo (database) and api (backend). |
+| image / build | mongo uses a ready image; api is built from the local Dockerfile. |
 | ports | Publishes container port 5000 on host port 5000. |
 | environment | MONGO_URI uses the service name mongo as the hostname. |
 | depends_on | Starts mongo before api. |
-| volumes | Named volume student-data persists the database files. |
-| networks | Both services join student-net so they can talk to each other. |
-
-### docker compose up
+| volumes / networks | Persistent database storage and a private network. |
 
 ```powershell
 docker compose up -d --build
 ```
 
-Builds the API image, creates the network and volume, and starts both containers in the background. Build log lines are trimmed in the screenshot.
+Build and start the whole stack in the background.
 
-![docker compose up -d --build](screenshots/33_compose_up.png)
-
-### docker compose ps and logs
+![33_compose_up](screenshots/33_compose_up.png)
 
 ```powershell
 docker compose ps
 ```
 
-Lists the containers of this compose project.
+Containers of this compose project.
 
-![docker compose ps](screenshots/34_compose_ps.png)
+![34_compose_ps](screenshots/34_compose_ps.png)
 
 ```powershell
 docker compose logs api
 ```
 
-Shows logs of the api service.
+Logs of the api service.
 
-![docker compose logs api](screenshots/35_compose_logs.png)
-
-```powershell
-curl -s -X POST http://localhost:5000/api/students ...
-```
-
-The API works the same way when started through Compose.
-
-![curl -s -X POST http://localhost:5000/api/students ...](screenshots/36_compose_curl.png)
+![35_compose_logs](screenshots/35_compose_logs.png)
 
 ```powershell
 curl -s http://localhost:5000/health
 ```
 
-Health endpoint confirms the API is connected to MongoDB.
+The API is connected to MongoDB.
 
-![curl -s http://localhost:5000/health](screenshots/37_health.png)
+![37_health](screenshots/37_health.png)
 
-## Docker Desktop
+![Docker Desktop: the compose stack with student-mongo and student-api](screenshots/dd_containers.png)
 
-Docker Desktop is the graphical interface for everything done above. The screenshots below were taken while the compose stack was running.
+*Docker Desktop: the compose stack with student-mongo and student-api*
 
-![Containers view: the student-management-api compose stack with student-mongo and student-api](screenshots/dd_containers.png)
+![Docker Desktop: logs of the student-api container](screenshots/dd_container_logs.png)
 
-*Containers view: the student-management-api compose stack with student-mongo and student-api*
+*Docker Desktop: logs of the student-api container*
 
-![Container details: logs of student-api](screenshots/dd_container_logs.png)
+![Docker Desktop: live CPU, memory, disk and network stats](screenshots/dd_container_stats.png)
 
-*Container details: logs of student-api*
+*Docker Desktop: live CPU, memory, disk and network stats*
 
-![Container details: live CPU, memory, disk and network stats](screenshots/dd_container_stats.png)
+![Docker Desktop: volumes](screenshots/dd_volumes.png)
 
-*Container details: live CPU, memory, disk and network stats*
+*Docker Desktop: volumes*
 
-![Volumes view: student-data and the compose-managed volume](screenshots/dd_volumes.png)
+![Docker Desktop: build history](screenshots/dd_builds.png)
 
-*Volumes view: student-data and the compose-managed volume*
-
-![Builds view: build history for student-management-api](screenshots/dd_builds.png)
-
-*Builds view: build history for student-management-api*
-
-## Pushing to Docker Hub (optional)
-
-To share the image, tag it with your Docker Hub username and push it. These commands are listed for reference and need your own Docker Hub account:
-
-```powershell
-docker login
-docker tag student-api:1.0 <your-dockerhub-username>/student-api:1.0
-docker push <your-dockerhub-username>/student-api:1.0
-```
-
-## Cleanup
+*Docker Desktop: build history*
 
 ```powershell
 docker compose down
 ```
 
-Stops and removes the compose containers and network. Add -v to also delete volumes.
+Stop and remove the stack (add -v to delete volumes).
 
-![docker compose down](screenshots/38_compose_down.png)
+![38_compose_down](screenshots/38_compose_down.png)
+
+### Docker cleanup
 
 ```powershell
 docker rmi student-api:latest
 ```
 
-Removes an image tag.
+Remove an image tag.
 
-![docker rmi student-api:latest](screenshots/39_rmi.png)
+![39_rmi](screenshots/39_rmi.png)
 
 ```powershell
 docker system df
 ```
 
-Shows disk space used by images, containers, volumes and cache.
+Disk used by images, containers, volumes and cache.
 
-![docker system df](screenshots/40_system_df.png)
+![40_system_df](screenshots/40_system_df.png)
 
 ```powershell
 docker image prune -f
 ```
 
-Deletes dangling (untagged) images.
+Delete dangling images.
 
-![docker image prune -f](screenshots/41_image_prune.png)
+![41_image_prune](screenshots/41_image_prune.png)
 
 ```powershell
 docker volume rm student-data
 ```
 
-Deletes a volume and its data.
+Delete a volume and its data.
 
-![docker volume rm student-data](screenshots/42_volume_rm.png)
+![42_volume_rm](screenshots/42_volume_rm.png)
 
-docker system prune removes all stopped containers, unused networks, dangling images and build cache in one go. Use it carefully, because it also affects other projects.
+## Kubernetes
 
-## Command Cheat Sheet
+Docker runs containers on one machine. Kubernetes runs containers across a cluster of machines and keeps them in the state you declare: if you ask for 4 copies of the API, it starts 4, restarts any that crash, replaces any that are deleted and balances traffic between them.
 
-| Command | What it does |
+| Object | Meaning |
 |---|---|
-| docker --version / docker info | Check installation and engine details |
-| docker pull <image> | Download an image |
-| docker build -t name:tag . | Build an image from a Dockerfile |
-| docker images | List images |
-| docker tag src dst | Add a new tag to an image |
-| docker history / inspect | Show image layers / metadata |
-| docker rmi <image> | Remove an image |
-| docker run -d -p h:c --name n img | Create and start a container |
-| docker ps / docker ps -a | List running / all containers |
-| docker logs [-f] <container> | Show container output |
-| docker exec -it <container> sh | Open a shell inside a container |
-| docker top / docker stats | Processes / resource usage |
-| docker stop \| start \| restart | Control container lifecycle |
-| docker rm [-f] <container> | Remove a container |
-| docker network create \| ls \| inspect \| rm | Manage networks |
-| docker volume create \| ls \| inspect \| rm | Manage volumes |
-| docker compose up -d --build | Build and start all services |
-| docker compose ps \| logs \| down | Inspect and stop a compose project |
-| docker system df / prune | Disk usage / cleanup |
-| docker login / push | Publish an image to a registry |
+| Cluster / Node | A set of machines (nodes) managed by Kubernetes. Here: one node in Docker Desktop. |
+| Pod | The smallest unit: one or more containers running together. |
+| Deployment | Declares which image to run and how many replicas; handles rollouts and self-healing. |
+| ReplicaSet | Created by a Deployment to keep the requested number of pods running. |
+| Service | A stable name and IP that load-balances traffic to matching pods. |
+| ConfigMap | Configuration (environment variables) kept outside the image. |
+| PersistentVolumeClaim | A request for persistent storage (used by MongoDB). |
+| Namespace | A logical group that isolates this app's objects (student-app). |
+| kubectl | The command-line tool used to talk to the cluster. |
+
+### Enabling Kubernetes in Docker Desktop
+
+Settings → Kubernetes → Enable Kubernetes → Apply → Install. Docker Desktop created a single-node cluster (kind provisioner, Kubernetes v1.36.1).
+
+![Docker Desktop Kubernetes settings](screenshots/dd_k8s_settings.png)
+
+*Docker Desktop Kubernetes settings*
+
+```powershell
+kubectl version
+```
+
+kubectl client and cluster server versions.
+
+![k01_kubectl_version](screenshots/k01_kubectl_version.png)
+
+```powershell
+kubectl cluster-info
+```
+
+Address of the cluster's control plane.
+
+![k02_cluster_info](screenshots/k02_cluster_info.png)
+
+```powershell
+kubectl get nodes -o wide
+```
+
+The cluster has one Ready node.
+
+![k03_get_nodes](screenshots/k03_get_nodes.png)
+
+### Kubernetes manifests
+
+The desired state is written as YAML in the k8s/ folder. The API Deployment uses the image that GitHub Actions published to GHCR, which connects the CI/CD pipeline to the deployment.
+
+```powershell
+cat k8s/mongo.yaml
+```
+
+MongoDB: a PersistentVolumeClaim for data, a Deployment with 1 replica and a ClusterIP Service named mongo.
+
+![k00b_cat_mongo_yaml](screenshots/k00b_cat_mongo_yaml.png)
+
+```powershell
+cat k8s/api.yaml
+```
+
+API: a ConfigMap with MONGO_URI, a Deployment with 2 replicas of the GHCR image, health probes and resource limits, and a NodePort Service.
+
+![k00a_cat_api_yaml](screenshots/k00a_cat_api_yaml.png)
+
+| Setting | Purpose |
+|---|---|
+| replicas: 2 | Run two identical API pods. |
+| image: ghcr.io/.../student-api:latest | The image built and published by the CI/CD pipeline. |
+| envFrom: configMapRef | Injects MONGO_URI and PORT from the ConfigMap. |
+| readinessProbe /health | A pod only receives traffic once /health responds. |
+| livenessProbe /health | Kubernetes restarts the container if /health stops responding. |
+| resources requests / limits | Guaranteed and maximum CPU/memory per pod. |
+| Service selector app: student-api | Sends traffic to all pods with that label. |
+
+### Deploying the application
+
+```powershell
+kubectl apply -f k8s/namespace.yaml
+```
+
+Create the student-app namespace.
+
+![k04_apply_ns](screenshots/k04_apply_ns.png)
+
+```powershell
+kubectl apply -f k8s/
+```
+
+Create every object defined in the folder.
+
+![k05_apply_all](screenshots/k05_apply_all.png)
+
+```powershell
+kubectl rollout status deployment/student-api -n student-app
+```
+
+Waits until all replicas are available.
+
+![k06_rollout_status](screenshots/k06_rollout_status.png)
+
+```powershell
+kubectl get all -n student-app
+```
+
+Pods, services, deployments and replicasets of the app.
+
+![k07_get_all](screenshots/k07_get_all.png)
+
+```powershell
+kubectl get pods -n student-app -o wide
+```
+
+Pods with their internal IP and node.
+
+![k08_get_pods_wide](screenshots/k08_get_pods_wide.png)
+
+```powershell
+kubectl describe deployment student-api -n student-app
+```
+
+Full details of the deployment: image, probes, limits, rollout strategy and events.
+
+![k09_describe](screenshots/k09_describe.png)
+
+```powershell
+kubectl logs deployment/student-api -n student-app
+```
+
+Logs from an API pod: connected to MongoDB.
+
+![k10_logs](screenshots/k10_logs.png)
+
+### Accessing the application
+
+```powershell
+kubectl port-forward svc/student-api 8080:80 -n student-app
+```
+
+Forwards localhost:8080 to the service inside the cluster (left running in its own terminal).
+
+![k11_port_forward](screenshots/k11_port_forward.png)
+
+```powershell
+curl -s http://localhost:8080/health
+```
+
+The API running in Kubernetes is healthy.
+
+![k12_curl_health](screenshots/k12_curl_health.png)
+
+```powershell
+curl -s -X POST http://localhost:8080/api/students ...
+```
+
+Create a student in the Kubernetes deployment.
+
+![k13_curl_post](screenshots/k13_curl_post.png)
+
+```powershell
+curl -s http://localhost:8080/api/students
+```
+
+Read it back from MongoDB running in the cluster.
+
+![k14_curl_get](screenshots/k14_curl_get.png)
+
+### Scaling
+
+```powershell
+kubectl scale deployment student-api --replicas=4 -n student-app
+```
+
+Scale the API from 2 to 4 pods.
+
+![k15_scale](screenshots/k15_scale.png)
+
+```powershell
+kubectl get pods -n student-app -l app=student-api
+```
+
+Two new pods were started.
+
+![k16_pods_scaled](screenshots/k16_pods_scaled.png)
+
+### Self-healing
+
+```powershell
+kubectl delete pod <pod-name> -n student-app
+```
+
+Delete one pod on purpose.
+
+![k17_delete_pod](screenshots/k17_delete_pod.png)
+
+```powershell
+kubectl get pods -n student-app -l app=student-api
+```
+
+Kubernetes immediately created a replacement pod (age a few seconds) to keep 4 replicas.
+
+![k18_pods_healed](screenshots/k18_pods_healed.png)
+
+```powershell
+kubectl rollout history deployment/student-api -n student-app
+```
+
+Revision history; kubectl rollout undo can return to an earlier revision.
+
+![k19_rollout_history](screenshots/k19_rollout_history.png)
+
+```powershell
+kubectl get configmap,pvc -n student-app
+```
+
+The ConfigMap and the bound storage claim.
+
+![k20_get_cm_pvc](screenshots/k20_get_cm_pvc.png)
+
+![Docker Desktop: Kubernetes view of the student-app namespace](screenshots/dd_k8s_view.png)
+
+*Docker Desktop: Kubernetes view of the student-app namespace*
+
+### Kubernetes cleanup
+
+```powershell
+kubectl delete -f k8s/
+```
+
+Deletes everything that was created from the manifests.
+
+![k21_delete](screenshots/k21_delete.png)
+
+```powershell
+kubectl get namespaces
+```
+
+The student-app namespace is gone.
+
+![k22_get_ns](screenshots/k22_get_ns.png)
+
+---
+
+# Summary
+
+## Command cheat sheet
+
+| Area | Command | What it does |
+|---|---|---|
+| Git | git add / commit / push | Stage, commit and upload changes |
+| Git | git switch -c / merge | Create a branch / merge it |
+| Git | git log --oneline --graph | View history |
+| Actions | .github/workflows/*.yml | Define the pipeline |
+| Actions | on: push / pull_request | Run on every push / PR |
+| Actions | needs: <job> | Run a job only after another succeeds |
+| Docker | docker build -t name:tag . | Build an image |
+| Docker | docker run -d -p h:c --name n img | Run a container |
+| Docker | docker ps / logs / exec / stop / rm | Manage containers |
+| Docker | docker compose up -d / down | Start / stop a multi-container stack |
+| Kubernetes | kubectl apply -f <dir> | Create or update objects from YAML |
+| Kubernetes | kubectl get pods / all | List resources |
+| Kubernetes | kubectl describe / logs | Inspect a resource / read logs |
+| Kubernetes | kubectl scale --replicas=N | Scale a deployment |
+| Kubernetes | kubectl port-forward svc/x 8080:80 | Reach a service locally |
+| Kubernetes | kubectl delete -f <dir> | Remove the app |
 
 ## Conclusion
 
-The Student Management API was containerised with a Dockerfile, run as two connected containers (API and MongoDB) using a custom network and a persistent volume, and then started as a single stack with Docker Compose. Every basic Docker command for images, containers, networks, volumes, Compose and cleanup was executed and verified, both from the terminal and in Docker Desktop.
+The Student Management API went through a complete DevOps workflow. Its code is versioned with Git and hosted on GitHub, using feature branches and merges. Every push runs a GitHub Actions pipeline that tests the code, builds and smoke-tests the Docker stack, and publishes a versioned image to GitHub Container Registry. A deliberate bug showed the pipeline blocking a broken change. The published image was then deployed to Kubernetes, where it was scaled, accessed, and automatically healed after a pod was deleted.

@@ -1,6 +1,0 @@
-{
- "key": "c01_tree_github",
- "cmd": "tree /F /A .github",
- "output": "C:\\USERS\\ABHIN\\DESKTOP\\PROJECTS\\MERITE\\STUDENT-MANAGEMENT-API\\.GITHUB\n\\---workflows\n        ci-cd.yml",
- "rc": 0
-}

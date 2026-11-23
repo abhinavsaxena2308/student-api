@@ -1,6 +1,0 @@
-{
- "key": "c08_git_remote",
- "cmd": "git remote -v",
- "output": "origin\thttps://github.com/abhinavsaxena2308/student-api.git (fetch)\norigin\thttps://github.com/abhinavsaxena2308/student-api.git (push)",
- "rc": 0
-}

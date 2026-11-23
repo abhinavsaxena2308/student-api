@@ -1,6 +1,0 @@
-{
- "key": "c04_mongo_for_tests",
- "cmd": "docker run -d --rm --name test-mongo -p 27017:27017 mongo:7",
- "output": "90b63e68a3ce91186ff882847055464f7cc50495842c8fe6d192cef2741f22bd",
- "rc": 0
-}

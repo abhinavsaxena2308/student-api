@@ -1,6 +1,0 @@
-{
- "key": "c06_stop_mongo",
- "cmd": "docker stop test-mongo",
- "output": "test-mongo",
- "rc": 0
-}
