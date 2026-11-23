@@ -1,0 +1,6 @@
+{
+ "key": "c03_cat_test_head",
+ "cmd": "cat tests/api.test.js | Select-Object -First 30",
+ "output": "const request = require(\"supertest\");\nconst mongoose = require(\"mongoose\");\nconst app = require(\"../src/app\");\n\nconst MONGO_URI = process.env.MONGO_URI || \"mongodb://localhost:27017/studentdb_test\";\n\nbeforeAll(async () => {\n  await mongoose.connect(MONGO_URI);\n  await mongoose.connection.dropDatabase();\n});\n\nafterAll(async () => {\n  await mongoose.connection.dropDatabase();\n  await mongoose.disconnect();\n});\n\ndescribe(\"Student Management API\", () => {\n  let id;\n\n  test(\"GET /health reports database connected\", async () => {\n    const res = await request(app).get(\"/health\");\n    expect(res.status).toBe(200);\n    expect(res.body).toEqual({ status: \"ok\", db: \"connected\" });\n  });\n\n  test(\"POST /api/students creates a student\", async () => {\n    const res = await request(app).post(\"/api/students\").send({\n      name: \"Aarav Sharma\", rollNo: \"CS2026-001\", email: \"aarav@example.com\", course: \"B.Tech CSE\", year: 2,\n    });\n    expect(res.status).toBe(201);",
+ "rc": 0
+}

@@ -1,0 +1,6 @@
+{
+ "key": "c05_npm_test",
+ "cmd": "npm test",
+ "output": "\n> student-management-api@1.0.0 test\n> jest --runInBand --forceExit\n\n\nPASS tests/api.test.js\n  Student Management API\n    \u221a GET /health reports database connected (16 ms)\n    \u221a POST /api/students creates a student (60 ms)\n    \u221a POST /api/students rejects missing fields (7 ms)\n    \u221a GET /api/students lists students (15 ms)\n    \u221a PUT /api/students/:id updates a student (12 ms)\n    \u221a DELETE /api/students/:id deletes a student (16 ms)\n\nTest Suites: 1 passed, 1 total\nTests:       6 passed, 6 total\nSnapshots:   0 total\nTime:        1.558 s, estimated 2 s\nRan all test suites.\nForce exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+ "rc": 0
+}

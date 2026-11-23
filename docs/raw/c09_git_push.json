@@ -1,0 +1,6 @@
+{
+ "key": "c09_git_push",
+ "cmd": "git push origin main",
+ "output": "\ufeffTo https://github.com/abhinavsaxena2308/student-api.git\n   fba425f..4fdf602  main -> main",
+ "rc": 0
+}
