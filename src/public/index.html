@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Management</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 30px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 17px; margin-top: 30px; }
+    input, select, button { font-size: 14px; padding: 6px 8px; margin: 4px 4px 4px 0; }
+    input { width: 140px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; font-size: 14px; }
+    th { background: #f2f2f2; }
+    #msg { font-size: 14px; color: green; }
+    #msg.error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Student Management</h1>
+
+  <h2 id="formTitle">Add Student</h2>
+  <form id="form" autocomplete="off">
+    <input name="name" placeholder="Name" required>
+    <input name="rollNo" placeholder="Roll No." required>
+    <input name="email" type="email" placeholder="Email" required>
+    <input name="course" placeholder="Course" required>
+    <select name="year">
+      <option value="1">Year 1</option><option value="2">Year 2</option><option value="3">Year 3</option>
+      <option value="4">Year 4</option><option value="5">Year 5</option>
+    </select>
+    <button type="submit" id="saveBtn">Add</button>
+    <button type="button" id="cancelBtn" hidden>Cancel</button>
+  </form>
+  <p id="msg"></p>
+
+  <h2>Students</h2>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Roll No.</th><th>Email</th><th>Course</th><th>Year</th><th>Action</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script>
+    const API = "/api/students";
+    const form = document.getElementById("form");
+    const msg = document.getElementById("msg");
+    let students = [];
+    let editId = null;
+
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    function show(text, error) {
+      msg.textContent = text;
+      msg.className = error ? "error" : "";
+    }
+
+    async function load() {
+      students = await (await fetch(API)).json();
+      document.getElementById("rows").innerHTML = students.length
+        ? students.map((s) => `
+            <tr>
+              <td>${esc(s.name)}</td><td>${esc(s.rollNo)}</td><td>${esc(s.email)}</td>
+              <td>${esc(s.course)}</td><td>${esc(s.year)}</td>
+              <td><button data-edit="${s._id}">Edit</button><button data-del="${s._id}">Delete</button></td>
+            </tr>`).join("")
+        : `<tr><td colspan="6">No students yet</td></tr>`;
+    }
+
+    function resetForm() {
+      editId = null;
+      form.reset();
+      document.getElementById("formTitle").textContent = "Add Student";
+      document.getElementById("saveBtn").textContent = "Add";
+      document.getElementById("cancelBtn").hidden = true;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form));
+      data.year = Number(data.year);
+      const res = await fetch(editId ? `${API}/${editId}` : API, {
+        method: editId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const body = await res.json();
+      if (!res.ok) return show(body.error || "Something went wrong", true);
+      show(editId ? "Student updated" : "Student added");
+      resetForm();
+      load();
+    });
+
+    document.getElementById("cancelBtn").addEventListener("click", () => { resetForm(); show(""); });
+
+    document.getElementById("rows").addEventListener("click", async (e) => {
+      const id = e.target.dataset.edit || e.target.dataset.del;
+      if (!id) return;
+      const s = students.find((x) => x._id === id);
+      if (e.target.dataset.edit) {
+        editId = id;
+        for (const k of ["name", "rollNo", "email", "course", "year"]) form.elements[k].value = s[k] ?? "";
+        document.getElementById("formTitle").textContent = "Edit Student";
+        document.getElementById("saveBtn").textContent = "Update";
+        document.getElementById("cancelBtn").hidden = false;
+        show("");
+      } else {
+        if (!confirm(`Delete ${s.name}?`)) return;
+        const res = await fetch(`${API}/${id}`, { method: "DELETE" });
+        show(res.ok ? "Student deleted" : "Delete failed", !res.ok);
+        if (editId === id) resetForm();
+        load();
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

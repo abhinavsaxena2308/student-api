@@ -23,6 +23,13 @@ describe("Student Management API", () => {
     expect(res.body).toEqual({ status: "ok", db: "connected" });
   });
 
+  test("GET / serves the frontend page", async () => {
+    const res = await request(app).get("/");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/html/);
+    expect(res.text).toContain("Student Management");
+  });
+
   test("POST /api/students creates a student", async () => {
     const res = await request(app).post("/api/students").send({
       name: "Aarav Sharma", rollNo: "CS2026-001", email: "aarav@example.com", course: "B.Tech CSE", year: 2,

@@ -2,6 +2,9 @@ services:
   mongo:
     image: mongo:7
     container_name: student-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
     volumes:
       - student-data:/data/db
     networks:
@@ -11,6 +14,7 @@ services:
     build: .
     image: student-api:1.0
     container_name: student-api
+    restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
